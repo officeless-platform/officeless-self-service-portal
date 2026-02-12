@@ -1,17 +1,43 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useEffect, useState, Suspense } from 'react';
+import { useMemo, useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { ProvisioningProgress } from '../ProvisioningProgress';
+import { EnvironmentReadyDetails } from '../EnvironmentReadyDetails';
+
+interface SubscriptionStatus {
+  status: string;
+  envName: string;
+  initialSetupShownAt?: string;
+  endpoints?: {
+    dashboardUrl: string;
+    apiEndpoint: string;
+    awsConsoleUrl: string;
+    awsAccountId?: string;
+    region?: string;
+  };
+  planSnapshot?: { summary: { outputs: Record<string, string> } };
+}
 
 function OnboardingStatusContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const [data, setData] = useState<{
-    subscription: { status: string; envName: string; planSnapshot?: { summary: { outputs: Record<string, string> } } };
+    subscription: SubscriptionStatus;
     company: { legalName: string } | null;
   } | null>(null);
   const [loading, setLoading] = useState(!!id);
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    const res = await fetch(`/api/subscriptions/${id}`);
+    if (res.ok) {
+      const json = await res.json();
+      setData(json);
+    }
+    setLoading(false);
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -29,6 +55,25 @@ function OnboardingStatusContent() {
       cancelled = true;
     };
   }, [id]);
+
+  const handleProvisioningComplete = useCallback(async () => {
+    if (!id) return;
+    const res = await fetch('/api/onboarding/provisioning-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId: id }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setData((prev) =>
+        prev
+          ? { ...prev, subscription: { ...prev.subscription, ...updated } }
+          : { subscription: updated, company: null }
+      );
+    } else {
+      await fetchData();
+    }
+  }, [id, fetchData]);
 
   const statusLabel = useMemo(() => {
     if (!data?.subscription) return null;
@@ -79,7 +124,14 @@ function OnboardingStatusContent() {
   }
 
   const sub = data.subscription;
+
+  // One-time: show provisioning progress animation when status is provisioning and not yet shown
+  if (sub.status === 'provisioning' && !sub.initialSetupShownAt) {
+    return <ProvisioningProgress onComplete={handleProvisioningComplete} />;
+  }
+
   const outputs = sub.planSnapshot?.summary?.outputs ?? {};
+  const showReadyDetails = sub.status === 'ready' && sub.endpoints;
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -104,7 +156,18 @@ function OnboardingStatusContent() {
               Environment: {sub.envName}. Provisioning is mock; no real AWS resources are created.
             </p>
           </div>
-          {Object.keys(outputs).length > 0 && (
+
+          {showReadyDetails && sub.endpoints && (
+            <div className="mt-6">
+              <EnvironmentReadyDetails
+                envName={sub.envName}
+                endpoints={sub.endpoints}
+                companyName={data.company?.legalName ?? undefined}
+              />
+            </div>
+          )}
+
+          {!showReadyDetails && Object.keys(outputs).length > 0 && (
             <div className="mt-6 rounded-lg border border-slate-600 bg-slate-800/50 p-4">
               <h3 className="font-medium text-slate-200">Outputs (mock)</h3>
               <ul className="mt-2 space-y-1 text-sm text-slate-300">

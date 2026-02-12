@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { EnvironmentReadyDetails } from '@/app/onboarding/EnvironmentReadyDetails';
 
 interface Sub {
   id: string;
@@ -12,6 +13,13 @@ interface Sub {
   infraProfileId: string;
   awsMode: string;
   envName: string;
+  endpoints?: {
+    dashboardUrl: string;
+    apiEndpoint: string;
+    awsConsoleUrl: string;
+    awsAccountId?: string;
+    region?: string;
+  };
 }
 interface Company {
   legalName: string;
@@ -172,6 +180,25 @@ export default function AdminCustomerPage() {
           <p className="mt-2">
             Status: <span className="font-medium text-white">{sub.status}</span>
           </p>
+
+          {sub.status === 'provisioning' && (
+            <p className="mt-4 text-sm text-slate-400">
+              Customer will see the one-time infrastructure progress when they open their status page.
+            </p>
+          )}
+
+          {sub.status === 'ready' && sub.endpoints && (
+            <section className="mt-6">
+              <h2 className="font-medium text-slate-200">Customer access & endpoints</h2>
+              <div className="mt-3">
+                <EnvironmentReadyDetails
+                  envName={sub.envName}
+                  endpoints={sub.endpoints}
+                  companyName={company?.legalName}
+                />
+              </div>
+            </section>
+          )}
 
           {sub.status === 'pending_approval' && (
             <div className="mt-6 flex gap-3">

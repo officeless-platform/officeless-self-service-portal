@@ -44,6 +44,16 @@ export interface Subscription {
   envName: string;
   planSnapshot?: unknown;
   costEstimateSnapshot?: unknown;
+  /** Set when the one-time provisioning animation has been shown (ISO date). */
+  initialSetupShownAt?: string;
+  /** Filled when status becomes ready (mock endpoints and access). */
+  endpoints?: {
+    dashboardUrl: string;
+    apiEndpoint: string;
+    awsConsoleUrl: string;
+    awsAccountId?: string;
+    region?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

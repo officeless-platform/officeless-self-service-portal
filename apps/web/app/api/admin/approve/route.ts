@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
     const updated = await updateSubscription(parsed.data.subscriptionId, {
-      status: parsed.data.approved ? 'approved' : 'rejected',
+      status: parsed.data.approved ? 'provisioning' : 'rejected',
     });
     return NextResponse.json(updated);
   } catch (e) {
