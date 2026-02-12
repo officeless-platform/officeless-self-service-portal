@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createCompany, createSubscription } from '@/lib/store';
 
+const contactSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
+});
+
 const bodySchema = z.object({
   legalName: z.string().min(1),
   registrationNumber: z.string().min(1),
   address: z.string().min(1),
-  billingContact: z.string().min(1),
-  technicalContact: z.string().min(1),
+  billingContact: contactSchema,
+  technicalContact: contactSchema,
 });
 
 export async function POST(request: Request) {

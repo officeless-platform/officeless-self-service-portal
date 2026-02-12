@@ -6,23 +6,36 @@ interface AdminActionProgressModalProps {
   open: boolean;
   title: string;
   step: ProgressStep;
+  /** Custom labels for steps 1–3 (submitting, processing, succeeded). If length < 3, rest use defaults. */
+  stepLabels?: [string, string, string];
+  /** Shown when step === 'succeeded' (e.g. S3 location for backup). */
+  resultDetail?: string | null;
   error?: string | null;
   onClose: () => void;
 }
+
+const DEFAULT_LABELS: [string, string, string] = [
+  'Submitting request…',
+  'Processing…',
+  'Succeeded',
+];
 
 export function AdminActionProgressModal({
   open,
   title,
   step,
+  stepLabels,
+  resultDetail,
   error,
   onClose,
 }: AdminActionProgressModalProps) {
   if (!open) return null;
 
+  const [submitLabel, processLabel, successLabel] = stepLabels ?? DEFAULT_LABELS;
   const steps: { key: ProgressStep; label: string }[] = [
-    { key: 'submitting', label: 'Submitting request…' },
-    { key: 'processing', label: 'Processing…' },
-    { key: 'succeeded', label: 'Succeeded' },
+    { key: 'submitting', label: submitLabel },
+    { key: 'processing', label: processLabel },
+    { key: 'succeeded', label: successLabel },
     { key: 'failed', label: 'Failed' },
   ];
 
@@ -38,7 +51,7 @@ export function AdminActionProgressModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-600 bg-slate-900 p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-xl border border-slate-600 bg-slate-900 p-6 shadow-xl">
         <h3 className="text-lg font-semibold text-white">{title}</h3>
         <ul className="mt-4 space-y-2">
           {steps.map((s, i) => {
@@ -70,6 +83,11 @@ export function AdminActionProgressModal({
             );
           })}
         </ul>
+        {doneSuccess && resultDetail && (
+          <p className="mt-3 rounded bg-slate-800 px-3 py-2 font-mono text-xs text-emerald-300 break-all">
+            {resultDetail}
+          </p>
+        )}
         {error && step === 'failed' && (
           <p className="mt-3 text-sm text-red-400">{error}</p>
         )}

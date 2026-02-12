@@ -6,8 +6,11 @@ const bodySchema = z.object({
   subscriptionId: z.string(),
 });
 
-/** Generate mock endpoints for the environment (mock: no real infra). */
-function mockEndpoints(subscriptionId: string, envName: string): {
+function buildEndpoints(
+  subscriptionId: string,
+  envName: string,
+  region: string
+): {
   dashboardUrl: string;
   apiEndpoint: string;
   awsConsoleUrl: string;
@@ -18,7 +21,6 @@ function mockEndpoints(subscriptionId: string, envName: string): {
     ? `https://${process.env.VERCEL_URL}`
     : 'https://officeless-self-service-portal.vercel.app';
   const accountId = '123456789012';
-  const region = 'us-east-1';
   return {
     dashboardUrl: `${base}/onboarding/status?id=${subscriptionId}`,
     apiEndpoint: `${base}/api/env/${envName}`,
@@ -46,7 +48,8 @@ export async function POST(request: Request) {
       );
     }
     const now = new Date().toISOString();
-    const endpoints = mockEndpoints(sub.id, sub.envName);
+    const region = sub.awsRegion ?? 'us-east-1';
+    const endpoints = buildEndpoints(sub.id, sub.envName, region);
     const updated = await updateSubscription(parsed.data.subscriptionId, {
       status: 'ready',
       initialSetupShownAt: now,

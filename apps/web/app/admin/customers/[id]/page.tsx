@@ -17,6 +17,9 @@ interface Sub {
   infraProfileId: string;
   awsMode: string;
   envName: string;
+  paused?: boolean;
+  destroyed?: boolean;
+  lastBackup?: { s3Location: string; completedAt: string };
   endpoints?: {
     dashboardUrl: string;
     apiEndpoint: string;
@@ -53,13 +56,17 @@ export default function AdminCustomerPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalStep, setModalStep] = useState<ProgressStep>('submitting');
+  const [modalStepLabels, setModalStepLabels] = useState<[string, string, string] | undefined>(undefined);
+  const [modalResultDetail, setModalResultDetail] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const progressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressAbortedRef = useRef(false);
 
-  const openProgressModal = (title: string) => {
+  const openProgressModal = (title: string, stepLabels?: [string, string, string]) => {
     setModalError(null);
+    setModalResultDetail(null);
     setModalTitle(title);
+    setModalStepLabels(stepLabels);
     setModalStep('submitting');
     setModalOpen(true);
     progressAbortedRef.current = false;
@@ -73,6 +80,7 @@ export default function AdminCustomerPage() {
   const closeModal = () => {
     progressAbortedRef.current = true;
     setModalOpen(false);
+    setModalResultDetail(null);
     if (progressTimeoutRef.current) {
       clearTimeout(progressTimeoutRef.current);
       progressTimeoutRef.current = null;
@@ -81,29 +89,30 @@ export default function AdminCustomerPage() {
 
   const runWithProgress = async (
     title: string,
-    fn: () => Promise<void>
+    options: { stepLabels?: [string, string, string] },
+    fn: (setResultDetail: (s: string) => void) => Promise<void>
   ) => {
-    openProgressModal(title);
+    openProgressModal(title, options.stepLabels);
     progressTimeoutRef.current = setTimeout(() => {
       if (!progressAbortedRef.current) setModalStep('processing');
       progressTimeoutRef.current = null;
-    }, 300);
+    }, 400);
     try {
-      await fn();
+      await fn((detail) => setModalResultDetail(detail));
       if (progressAbortedRef.current) return;
       if (progressTimeoutRef.current) {
         clearTimeout(progressTimeoutRef.current);
         progressTimeoutRef.current = null;
       }
       setProgressStep('succeeded');
-      progressTimeoutRef.current = setTimeout(closeModal, 1500);
-    } catch {
+      progressTimeoutRef.current = setTimeout(closeModal, 2000);
+    } catch (e) {
       if (progressAbortedRef.current) return;
       if (progressTimeoutRef.current) {
         clearTimeout(progressTimeoutRef.current);
         progressTimeoutRef.current = null;
       }
-      setProgressStep('failed', 'Action failed.');
+      setProgressStep('failed', e instanceof Error ? e.message : 'Action failed.');
     }
   };
 
@@ -145,47 +154,82 @@ export default function AdminCustomerPage() {
   const handleApprove = async (approved: boolean) => {
     setError(null);
     setApproveLoading(true);
-    await runWithProgress(approved ? 'Approving' : 'Rejecting', async () => {
-      const res = await fetch('/api/admin/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: id, approved }),
-      });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      setSub(data);
-      await refreshActions();
-    });
+    await runWithProgress(
+      approved ? 'Approving' : 'Rejecting',
+      {
+        stepLabels: ['Submitting…', 'Updating subscription…', 'Done'],
+      },
+      async () => {
+        const res = await fetch('/api/admin/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: id, approved }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(typeof data?.error === 'string' ? data.error : 'Failed');
+        }
+        const data = await res.json();
+        setSub(data);
+        await refreshActions();
+      }
+    );
     setApproveLoading(false);
   };
 
   const handlePause = async () => {
     setError(null);
     setPauseLoading(true);
-    await runWithProgress('Pause infrastructure', async () => {
-      const res = await fetch('/api/admin/pause', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: id }),
-      });
-      if (!res.ok) throw new Error('Failed');
-      await Promise.all([refreshSubscription(), refreshActions()]);
-    });
+    const unpause = !!sub?.paused;
+    await runWithProgress(
+      unpause ? 'Unpausing infrastructure' : 'Pausing infrastructure',
+      {
+        stepLabels: unpause
+          ? ['Scaling node group up…', 'Verifying services…', 'Done']
+          : ['Scaling node group to 0…', 'Retaining database…', 'Done'],
+      },
+      async () => {
+        const res = await fetch('/api/admin/pause', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: id, unpause }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(typeof data?.error === 'string' ? data.error : 'Failed');
+        }
+        const data = await res.json();
+        setSub(data.subscription);
+        await refreshActions();
+      }
+    );
     setPauseLoading(false);
   };
 
   const handleBackup = async () => {
     setError(null);
     setBackupLoading(true);
-    await runWithProgress('Backup DB to S3', async () => {
-      const res = await fetch('/api/admin/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: id }),
-      });
-      if (!res.ok) throw new Error('Failed');
-      await Promise.all([refreshSubscription(), refreshActions()]);
-    });
+    await runWithProgress(
+      'Backup DB to S3',
+      {
+        stepLabels: ['Creating snapshot…', 'Uploading to S3…', 'Done'],
+      },
+      async (setResultDetail) => {
+        const res = await fetch('/api/admin/backup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: id }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(typeof data?.error === 'string' ? data.error : 'Failed');
+        }
+        const data = await res.json();
+        setSub(data.subscription);
+        await refreshActions();
+        if (data.s3Location) setResultDetail(data.s3Location);
+      }
+    );
     setBackupLoading(false);
   };
 
@@ -196,19 +240,30 @@ export default function AdminCustomerPage() {
     }
     setError(null);
     setDestroyLoading(true);
-    await runWithProgress('Destroy all', async () => {
-      const res = await fetch('/api/admin/destroy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subscriptionId: id,
-          confirmCompanyName: destroyConfirm,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed');
-      await Promise.all([refreshSubscription(), refreshActions()]);
-      setDestroyConfirm('');
-    });
+    await runWithProgress(
+      'Destroy all',
+      {
+        stepLabels: ['Tearing down VPC & networking…', 'Removing EKS, EFS, S3…', 'Revoking IAM…'],
+      },
+      async () => {
+        const res = await fetch('/api/admin/destroy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscriptionId: id,
+            confirmCompanyName: destroyConfirm,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(typeof data?.error === 'string' ? data.error : 'Failed');
+        }
+        const data = await res.json();
+        setSub(data.subscription);
+        await refreshActions();
+        setDestroyConfirm('');
+      }
+    );
     setDestroyLoading(false);
   };
 
@@ -237,6 +292,8 @@ export default function AdminCustomerPage() {
           </p>
           <p className="mt-2">
             Status: <span className="font-medium text-white">{sub.status}</span>
+            {sub.paused && <span className="ml-2 text-amber-400">(Paused)</span>}
+            {sub.destroyed && <span className="ml-2 text-red-400">(Destroyed)</span>}
           </p>
 
           {sub.status === 'provisioning' && (
@@ -253,6 +310,10 @@ export default function AdminCustomerPage() {
                   envName={sub.envName}
                   endpoints={sub.endpoints}
                   companyName={company?.legalName}
+                  paused={sub.paused}
+                  destroyed={sub.destroyed}
+                  statusHealth={sub.destroyed ? 'red' : sub.paused ? 'amber' : 'green'}
+                  apiHealth={sub.destroyed ? 'red' : sub.paused ? 'amber' : 'green'}
                 />
               </div>
             </section>
@@ -277,19 +338,31 @@ export default function AdminCustomerPage() {
             </div>
           )}
 
+          {sub.destroyed && (
+            <div className="mt-6 rounded-lg border border-red-600/50 bg-red-500/10 p-4 text-sm text-red-200">
+              Environment destroyed. No further actions available.
+            </div>
+          )}
+
           <section className="mt-8">
-            <h2 className="font-medium text-slate-200">Admin actions (mock)</h2>
+            <h2 className="font-medium text-slate-200">Admin actions</h2>
+            {sub.lastBackup && (
+              <p className="mt-2 text-xs text-slate-500">
+                Last backup: <span className="font-mono text-slate-400">{sub.lastBackup.s3Location}</span>
+                {' '}({new Date(sub.lastBackup.completedAt).toLocaleString()})
+              </p>
+            )}
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 onClick={handlePause}
-                disabled={pauseLoading}
+                disabled={pauseLoading || sub.destroyed}
                 className="btn-secondary"
               >
-                {pauseLoading ? '…' : 'Pause infra (retain DB)'}
+                {pauseLoading ? '…' : sub.paused ? 'Unpause infrastructure' : 'Pause infrastructure (retain DB)'}
               </button>
               <button
                 onClick={handleBackup}
-                disabled={backupLoading}
+                disabled={backupLoading || sub.destroyed}
                 className="btn-secondary"
               >
                 {backupLoading ? '…' : 'Backup DB to S3'}
@@ -305,7 +378,7 @@ export default function AdminCustomerPage() {
               />
               <button
                 onClick={handleDestroy}
-                disabled={destroyLoading || destroyConfirm !== company?.legalName}
+                disabled={destroyLoading || sub.destroyed || destroyConfirm !== company?.legalName}
                 className="btn-primary ml-2 mt-2 bg-red-600 hover:bg-red-500"
               >
                 {destroyLoading ? '…' : 'Destroy all'}
@@ -329,6 +402,11 @@ export default function AdminCustomerPage() {
                             </span>
                           )
                         : null}
+                      {a.details && typeof a.details === 'object' && 's3Location' in a.details && (
+                        <span className="ml-2 block font-mono text-xs text-slate-500">
+                          {(a.details as { s3Location: string }).s3Location}
+                        </span>
+                      )}
                     </li>
                   ))}
               </ul>
@@ -343,6 +421,8 @@ export default function AdminCustomerPage() {
         open={modalOpen}
         title={modalTitle}
         step={modalStep}
+        stepLabels={modalStepLabels}
+        resultDetail={modalResultDetail}
         error={modalError}
         onClose={closeModal}
       />

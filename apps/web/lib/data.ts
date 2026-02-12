@@ -49,6 +49,18 @@ export const AWS_MODES: { id: AwsOnboardingMode; name: string; description: stri
   { id: 'C', name: 'Existing account (OIDC role)', description: 'You create IAM role with trust to our OIDC. Recommended.' },
 ];
 
+export const AWS_REGIONS = [
+  { id: 'us-east-1', name: 'US East (N. Virginia)' },
+  { id: 'us-east-2', name: 'US East (Ohio)' },
+  { id: 'us-west-1', name: 'US West (N. California)' },
+  { id: 'us-west-2', name: 'US West (Oregon)' },
+  { id: 'eu-west-1', name: 'Europe (Ireland)' },
+  { id: 'eu-central-1', name: 'Europe (Frankfurt)' },
+  { id: 'ap-southeast-1', name: 'Asia Pacific (Singapore)' },
+  { id: 'ap-northeast-1', name: 'Asia Pacific (Tokyo)' },
+  { id: 'ap-southeast-2', name: 'Asia Pacific (Sydney)' },
+] as const;
+
 export type OnboardingStatus = 'draft' | 'pending_approval' | 'approved' | 'provisioning' | 'ready' | 'rejected';
 
 export const TRIAL_DURATION_DAYS = 14;

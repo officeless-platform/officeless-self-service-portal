@@ -19,13 +19,19 @@ const KEY_COUNTER_COMPANY = 'counter:companyId';
 const KEY_COUNTER_ACTION = 'counter:actionId';
 const KEY_COUNTER_TAC = 'counter:tacId';
 
+export interface ContactInfo {
+  name: string;
+  email: string;
+  phone: string;
+}
+
 export interface Company {
   id: string;
   legalName: string;
   registrationNumber: string;
   address: string;
-  billingContact: string;
-  technicalContact: string;
+  billingContact: ContactInfo;
+  technicalContact: ContactInfo;
   verificationStatus: 'pending' | 'approved';
   createdAt: string;
 }
@@ -41,12 +47,13 @@ export interface Subscription {
   awsMode: AwsOnboardingMode;
   awsRoleArn?: string;
   awsAccountId?: string;
+  awsRegion?: string;
   envName: string;
   planSnapshot?: unknown;
   costEstimateSnapshot?: unknown;
   /** Set when the one-time provisioning animation has been shown (ISO date). */
   initialSetupShownAt?: string;
-  /** Filled when status becomes ready (mock endpoints and access). */
+  /** Filled when status becomes ready (endpoints and access). */
   endpoints?: {
     dashboardUrl: string;
     apiEndpoint: string;
@@ -54,6 +61,12 @@ export interface Subscription {
     awsAccountId?: string;
     region?: string;
   };
+  /** True when admin has paused infrastructure (scale to 0, retain DB). */
+  paused?: boolean;
+  /** True when admin has destroyed the environment; no further actions allowed. */
+  destroyed?: boolean;
+  /** Last backup result (S3 location and time). */
+  lastBackup?: { s3Location: string; completedAt: string };
   createdAt: string;
   updatedAt: string;
 }

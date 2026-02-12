@@ -5,10 +5,14 @@ import { useMemo, useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { ProvisioningProgress } from '../ProvisioningProgress';
 import { EnvironmentReadyDetails } from '../EnvironmentReadyDetails';
+import { HealthIndicator, type HealthStatus } from '../HealthIndicator';
 
 interface SubscriptionStatus {
   status: string;
   envName: string;
+  paused?: boolean;
+  destroyed?: boolean;
+  lastBackup?: { s3Location: string; completedAt: string };
   initialSetupShownAt?: string;
   endpoints?: {
     dashboardUrl: string;
@@ -88,8 +92,38 @@ function OnboardingStatusContent() {
       ready: 'Ready',
       rejected: 'Rejected',
     };
-    return map[s] ?? s;
-  }, [data?.subscription?.status]);
+    let label = map[s] ?? s;
+    if (data.subscription.paused) label += ' (Paused)';
+    if (data.subscription.destroyed) label += ' (Destroyed)';
+    return label;
+  }, [data?.subscription?.status, data?.subscription?.paused, data?.subscription?.destroyed]);
+
+  const statusHealth = useMemo((): HealthStatus => {
+    if (!data?.subscription) return 'amber';
+    const { status, paused, destroyed } = data.subscription;
+    if (destroyed || status === 'rejected') return 'red';
+    if (paused) return 'amber';
+    if (status === 'ready') return 'green';
+    return 'amber';
+  }, [data?.subscription]);
+
+  const apiHealth = useMemo((): HealthStatus => {
+    if (!data?.subscription) return 'amber';
+    const { status, paused, destroyed } = data.subscription;
+    if (destroyed) return 'red';
+    if (paused) return 'amber';
+    if (status === 'ready') return 'green';
+    return 'amber';
+  }, [data?.subscription]);
+
+  const latestAdminAction = useMemo(() => {
+    if (!data?.subscription) return null;
+    const sub = data.subscription;
+    if (sub.destroyed) return 'Environment destroyed by admin.';
+    if (sub.paused) return 'Infrastructure paused by admin (DB retained).';
+    if (sub.lastBackup) return `Last backup: ${sub.lastBackup.s3Location}`;
+    return null;
+  }, [data?.subscription]);
 
   if (!id) {
     return (
@@ -201,8 +235,17 @@ function OnboardingStatusContent() {
             <span className="label">Status</span>
             <p className="mt-1 text-lg font-medium text-white">{statusLabel}</p>
             <p className="mt-2 text-sm text-slate-400">
-              Environment: {sub.envName}. Provisioning is mock; no real AWS resources are created.
+              Environment: {sub.envName}.
             </p>
+            <div className="mt-3 flex flex-wrap gap-4">
+              <HealthIndicator status={statusHealth} label="Status health" />
+              <HealthIndicator status={apiHealth} label="API health" />
+            </div>
+            {latestAdminAction && (
+              <p className="mt-3 rounded bg-slate-800/80 px-3 py-2 text-xs text-slate-400">
+                Latest admin action: {latestAdminAction}
+              </p>
+            )}
           </div>
 
           {showReadyDetails && sub.endpoints && (
@@ -211,13 +254,17 @@ function OnboardingStatusContent() {
                 envName={sub.envName}
                 endpoints={sub.endpoints}
                 companyName={data.company?.legalName ?? undefined}
+                paused={sub.paused}
+                destroyed={sub.destroyed}
+                statusHealth={statusHealth}
+                apiHealth={apiHealth}
               />
             </div>
           )}
 
           {!showReadyDetails && Object.keys(outputs).length > 0 && (
             <div className="mt-6 rounded-lg border border-slate-600 bg-slate-800/50 p-4">
-              <h3 className="font-medium text-slate-200">Outputs (mock)</h3>
+              <h3 className="font-medium text-slate-200">Outputs</h3>
               <ul className="mt-2 space-y-1 text-sm text-slate-300">
                 {Object.entries(outputs).map(([k, v]) => (
                   <li key={k}>

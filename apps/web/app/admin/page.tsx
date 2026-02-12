@@ -11,6 +11,8 @@ interface SubWithCompany {
   infraProfileId: string;
   awsMode: string;
   envName: string;
+  paused?: boolean;
+  destroyed?: boolean;
   company: { legalName: string; verificationStatus: string } | null;
 }
 
@@ -62,7 +64,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-2xl font-semibold text-white">Customers</h1>
             <p className="mt-1 text-slate-400">
-              Approve onboarding, pause infra, backup DB, or destroy. All actions are mock.
+              Approve onboarding, pause infra, backup DB, or destroy.
             </p>
           </div>
           {!loading && (
@@ -130,6 +132,8 @@ export default function AdminPage() {
                           }
                         >
                           {sub.status}
+                          {sub.paused && ' (Paused)'}
+                          {sub.destroyed && ' (Destroyed)'}
                         </span>
                       </td>
                       <td className="py-4">

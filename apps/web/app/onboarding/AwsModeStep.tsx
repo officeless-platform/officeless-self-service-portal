@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AWS_MODES } from '@/lib/data';
+import { AWS_MODES, AWS_REGIONS } from '@/lib/data';
 import type { AwsOnboardingMode } from '@/lib/data';
 
 interface AwsModeStepProps {
@@ -14,8 +14,9 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AwsOnboardingMode>('C');
-  const [roleArn, setRoleArn] = useState('');
-  const [accountId, setAccountId] = useState('');
+  const [region, setRegion] = useState('us-east-1');
+  const [roleArn, setRoleArn] = useState('arn:aws:iam::123456789012:role/OfficelessProvisionerRole');
+  const [accountId, setAccountId] = useState('123456789012');
 
   const handleNext = async () => {
     setError(null);
@@ -27,6 +28,7 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
         body: JSON.stringify({
           subscriptionId,
           awsMode: selected,
+          awsRegion: region || undefined,
           awsRoleArn: selected === 'C' ? roleArn || undefined : undefined,
           awsAccountId: accountId || undefined,
         }),
@@ -50,6 +52,20 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
         How we will provision into your AWS environment. OIDC (C) is recommended.
       </p>
       <div className="mt-6 space-y-4">
+        <div>
+          <label className="label">AWS region</label>
+          <select
+            className="input mt-1 w-full"
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+          >
+            {AWS_REGIONS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.id} — {r.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="grid gap-3">
           {AWS_MODES.map((mode) => (
             <label
@@ -85,9 +101,19 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
         )}
         {selected === 'C' && (
           <div className="space-y-3 rounded-lg border border-slate-600 bg-slate-800/50 p-4">
-            <p className="text-sm text-slate-300">Provide the IAM Role ARN with trust to our OIDC provider (mock: any format accepted).</p>
+            <p className="text-sm text-slate-300">Provide the IAM Role ARN with trust to our OIDC provider.</p>
+            <p className="text-sm text-slate-400">
+              <a
+                href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                Example OIDC trust policy &amp; IAM role (AWS docs)
+              </a>
+            </p>
             <div>
-              <label className="label">Role ARN (optional for mock)</label>
+              <label className="label">Role ARN</label>
               <input
                 className="input mt-1"
                 placeholder="arn:aws:iam::123456789012:role/OfficelessProvisionerRole"
@@ -96,7 +122,7 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
               />
             </div>
             <div>
-              <label className="label">Account ID (optional)</label>
+              <label className="label">Account ID</label>
               <input
                 className="input mt-1"
                 placeholder="123456789012"

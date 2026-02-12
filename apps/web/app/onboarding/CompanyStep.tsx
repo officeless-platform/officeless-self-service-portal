@@ -14,8 +14,8 @@ export function CompanyStep({ onSuccess }: CompanyStepProps) {
     legalName: '',
     registrationNumber: '',
     address: '',
-    billingContact: '',
-    technicalContact: '',
+    billingContact: { name: '', email: '', phone: '' },
+    technicalContact: { name: '', email: '', phone: '' },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,25 +98,87 @@ export function CompanyStep({ onSuccess }: CompanyStepProps) {
             required
           />
         </div>
-        <div>
-          <label className="label">Billing contact</label>
-          <input
-            className="input mt-1"
-            value={form.billingContact}
-            onChange={(e) => setForm((f) => ({ ...f, billingContact: e.target.value }))}
-            placeholder="Email or name"
-            required
-          />
+        <div className="rounded-lg border border-slate-600 bg-slate-800/30 p-4 space-y-3">
+          <span className="label block">Billing contact</span>
+          <div>
+            <label className="text-xs text-slate-500">Name</label>
+            <input
+              className="input mt-1 w-full"
+              value={form.billingContact.name}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                billingContact: { ...f.billingContact, name: e.target.value },
+              }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Email</label>
+            <input
+              type="email"
+              className="input mt-1 w-full"
+              value={form.billingContact.email}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                billingContact: { ...f.billingContact, email: e.target.value },
+              }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Phone number</label>
+            <input
+              type="tel"
+              className="input mt-1 w-full"
+              value={form.billingContact.phone}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                billingContact: { ...f.billingContact, phone: e.target.value },
+              }))}
+              required
+            />
+          </div>
         </div>
-        <div>
-          <label className="label">Technical contact</label>
-          <input
-            className="input mt-1"
-            value={form.technicalContact}
-            onChange={(e) => setForm((f) => ({ ...f, technicalContact: e.target.value }))}
-            placeholder="Email or name"
-            required
-          />
+        <div className="rounded-lg border border-slate-600 bg-slate-800/30 p-4 space-y-3">
+          <span className="label block">Technical contact</span>
+          <div>
+            <label className="text-xs text-slate-500">Name</label>
+            <input
+              className="input mt-1 w-full"
+              value={form.technicalContact.name}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                technicalContact: { ...f.technicalContact, name: e.target.value },
+              }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Email</label>
+            <input
+              type="email"
+              className="input mt-1 w-full"
+              value={form.technicalContact.email}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                technicalContact: { ...f.technicalContact, email: e.target.value },
+              }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500">Phone number</label>
+            <input
+              type="tel"
+              className="input mt-1 w-full"
+              value={form.technicalContact.phone}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                technicalContact: { ...f.technicalContact, phone: e.target.value },
+              }))}
+              required
+            />
+          </div>
         </div>
         {error && (
           <p className="text-sm text-red-400">{error}</p>

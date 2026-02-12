@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createAdminAction, getSubscription } from '@/lib/store';
+import { createAdminAction, getSubscription, updateSubscription } from '@/lib/store';
 
 const bodySchema = z.object({
   subscriptionId: z.string(),
+  unpause: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -17,19 +18,29 @@ export async function POST(request: Request) {
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
+    if (sub.destroyed) {
+      return NextResponse.json({ error: 'Environment is destroyed; cannot pause or unpause.' }, { status: 400 });
+    }
     const now = new Date().toISOString();
+    const unpause = parsed.data.unpause === true;
+    const updated = await updateSubscription(parsed.data.subscriptionId, {
+      paused: unpause ? false : true,
+    });
+    if (!updated) {
+      return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 });
+    }
     const action = await createAdminAction({
       subscriptionId: parsed.data.subscriptionId,
       action: 'pause',
       status: 'completed',
       completedAt: now,
       details: {
-        description: 'Scale node group to 0, retain DB. Mock: no real AWS change.',
+        description: unpause ? 'Scaled node group up; infrastructure resumed.' : 'Scaled node group to 0; database retained.',
       },
     });
-    return NextResponse.json(action);
+    return NextResponse.json({ subscription: updated, action });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: 'Failed to create pause action' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to pause/unpause' }, { status: 500 });
   }
 }
