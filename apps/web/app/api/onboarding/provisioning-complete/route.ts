@@ -13,6 +13,7 @@ function buildEndpoints(
 ): {
   dashboardUrl: string;
   apiEndpoint: string;
+  applicationLoginUrl: string;
   awsConsoleUrl: string;
   awsAccountId: string;
   region: string;
@@ -24,6 +25,7 @@ function buildEndpoints(
   return {
     dashboardUrl: `${base}/onboarding/status?id=${subscriptionId}`,
     apiEndpoint: `${base}/api/env/${envName}`,
+    applicationLoginUrl: `${base}/app/login?subscriptionId=${subscriptionId}`,
     awsConsoleUrl: `https://${accountId}.signin.aws.amazon.com/console`,
     awsAccountId: accountId,
     region,

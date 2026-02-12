@@ -41,7 +41,10 @@ export default function HomePage() {
           </h2>
           <p className="mt-4 text-lg text-slate-400">
             Onboard your company, choose your package and infrastructure profile,
-            and get a provisioning plan—all under a $1,000/month AWS cap.
+            and get a provisioning plan—all under a $1,000/month AWS infrastructure cap.
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            $1,000 refers to infrastructure cost only; Officeless licensing is not included.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link

@@ -5,6 +5,7 @@ import { HealthIndicator, type HealthStatus } from './HealthIndicator';
 interface Endpoints {
   dashboardUrl: string;
   apiEndpoint: string;
+  applicationLoginUrl?: string;
   awsConsoleUrl: string;
   awsAccountId?: string;
   region?: string;
@@ -43,10 +44,10 @@ export function EnvironmentReadyDetails({
       description: 'View onboarding status and environment dashboard',
     },
     {
-      label: 'API endpoint',
-      value: endpoints.apiEndpoint,
-      href: endpoints.apiEndpoint,
-      description: 'Base URL for your environment API',
+      label: 'Application endpoint',
+      value: endpoints.applicationLoginUrl ?? endpoints.apiEndpoint,
+      href: endpoints.applicationLoginUrl ?? endpoints.apiEndpoint,
+      description: 'Sign in to your application',
       health: apiHealth,
     },
     {
@@ -83,7 +84,7 @@ export function EnvironmentReadyDetails({
         </div>
         <div className="flex flex-wrap gap-3">
           <HealthIndicator status={statusHealth} label={`Status: ${healthLabel[statusHealth]}`} />
-          <HealthIndicator status={apiHealth} label={`API: ${healthLabel[apiHealth]}`} />
+          <HealthIndicator status={apiHealth} label={`Application: ${healthLabel[apiHealth]}`} />
         </div>
       </div>
       {companyName && (

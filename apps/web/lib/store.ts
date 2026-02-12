@@ -59,6 +59,7 @@ export interface Subscription {
   endpoints?: {
     dashboardUrl: string;
     apiEndpoint: string;
+    applicationLoginUrl?: string;
     awsConsoleUrl: string;
     awsAccountId?: string;
     region?: string;

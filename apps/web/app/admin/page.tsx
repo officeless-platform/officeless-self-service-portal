@@ -11,9 +11,36 @@ interface SubWithCompany {
   infraProfileId: string;
   awsMode: string;
   envName: string;
+  updatedAt?: string;
   paused?: boolean;
   destroyed?: boolean;
   company: { legalName: string; verificationStatus: string } | null;
+}
+
+function statusColor(status: string, paused?: boolean, destroyed?: boolean): string {
+  if (destroyed) return 'text-red-400';
+  if (paused) return 'text-amber-400';
+  switch (status) {
+    case 'ready': return 'text-emerald-400';
+    case 'rejected': return 'text-red-400';
+    case 'pending_approval': return 'text-amber-400';
+    case 'provisioning': return 'text-sky-400';
+    case 'approved': return 'text-slate-300';
+    case 'draft': return 'text-slate-500';
+    default: return 'text-slate-400';
+  }
+}
+
+function formatTimestamp(iso?: string): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+  } catch {
+    return iso;
+  }
 }
 
 export default function AdminPage() {
@@ -78,12 +105,7 @@ export default function AdminPage() {
           )}
         </div>
         {error && (
-          <p className="mt-4 text-sm text-amber-400">
-            {error}
-            <span className="ml-2 text-slate-500">
-              (Ensure Upstash Redis is connected in Vercel for persistence.)
-            </span>
-          </p>
+          <p className="mt-4 text-sm text-amber-400">{error}</p>
         )}
         {loading ? (
           <p className="mt-8 text-slate-400">Loading…</p>
@@ -92,49 +114,42 @@ export default function AdminPage() {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-600">
+                  <th className="pb-3 font-medium text-slate-300">Subscription ID</th>
                   <th className="pb-3 font-medium text-slate-300">Company</th>
                   <th className="pb-3 font-medium text-slate-300">Package</th>
                   <th className="pb-3 font-medium text-slate-300">Infra</th>
                   <th className="pb-3 font-medium text-slate-300">Status</th>
+                  <th className="pb-3 font-medium text-slate-300">Last updated</th>
                   <th className="pb-3 font-medium text-slate-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {subscriptions.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                    <td colSpan={7} className="py-8 text-center text-slate-500">
                       No subscriptions yet. Use Customer onboarding to create one.
-                      {!error && (
-                        <span className="mt-2 block text-xs text-slate-600">
-                          On Vercel, connect Upstash Redis (env: UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN) so data persists.
-                        </span>
-                      )}
                     </td>
                   </tr>
                 ) : (
                   subscriptions.map((sub) => (
                     <tr key={sub.id} className="border-b border-slate-700/60">
+                      <td className="py-4 font-mono text-sm text-slate-300">
+                        {sub.id}
+                      </td>
                       <td className="py-4 text-white">
                         {sub.company?.legalName ?? sub.companyId}
                       </td>
                       <td className="py-4 text-slate-300">{sub.packageId}</td>
                       <td className="py-4 text-slate-300">{sub.infraProfileId}</td>
                       <td className="py-4">
-                        <span
-                          className={
-                            sub.status === 'pending_approval'
-                              ? 'text-amber-400'
-                              : sub.status === 'ready'
-                                ? 'text-emerald-400'
-                                : sub.status === 'rejected'
-                                  ? 'text-red-400'
-                                  : 'text-slate-400'
-                          }
-                        >
+                        <span className={statusColor(sub.status, sub.paused, sub.destroyed)}>
                           {sub.status}
                           {sub.paused && ' (Paused)'}
                           {sub.destroyed && ' (Destroyed)'}
                         </span>
+                      </td>
+                      <td className="py-4 text-xs text-slate-500">
+                        {formatTimestamp(sub.updatedAt)}
                       </td>
                       <td className="py-4">
                         <Link

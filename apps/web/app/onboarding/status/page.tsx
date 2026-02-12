@@ -110,7 +110,7 @@ function OnboardingStatusContent() {
   const apiHealth = useMemo((): HealthStatus => {
     if (!data?.subscription) return 'amber';
     const { status, paused, destroyed } = data.subscription;
-    if (destroyed) return 'red';
+    if (destroyed || status === 'rejected') return 'red';
     if (paused) return 'amber';
     if (status === 'ready') return 'green';
     return 'amber';
@@ -239,7 +239,7 @@ function OnboardingStatusContent() {
             </p>
             <div className="mt-3 flex flex-wrap gap-4">
               <HealthIndicator status={statusHealth} label="Status health" />
-              <HealthIndicator status={apiHealth} label="API health" />
+              <HealthIndicator status={apiHealth} label="Application health" />
             </div>
             {latestAdminAction && (
               <p className="mt-3 rounded bg-slate-800/80 px-3 py-2 text-xs text-slate-400">
