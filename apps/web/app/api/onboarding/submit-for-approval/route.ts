@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const sub = getSubscription(parsed.data.subscriptionId);
+    const sub = await getSubscription(parsed.data.subscriptionId);
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
@@ -27,13 +27,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    recordTacAcceptance({
+    await recordTacAcceptance({
       userId: parsed.data.userId,
       subscriptionId: parsed.data.subscriptionId,
       termsVersion: parsed.data.termsVersion,
       ipHash: parsed.data.ipHash,
     });
-    const updated = updateSubscription(parsed.data.subscriptionId, {
+    const updated = await updateSubscription(parsed.data.subscriptionId, {
       status: 'pending_approval',
     });
     return NextResponse.json(updated);

@@ -16,3 +16,11 @@ This project is deployed on [Vercel](https://vercel.com) using **Vercel Git inte
 - **Push to any other branch** → Vercel builds and deploys a **preview** (unique URL per branch/commit).
 
 Vercel clones the repo, installs dependencies from the root (workspace), runs the root build (which builds `apps/web`), and serves the output from `.next` at the repo root.
+
+## 3. Persistence (Upstash Redis)
+
+Subscriptions and related data are stored in **Upstash Redis** so they persist across serverless invocations. Without it, data is in-memory and lost between requests.
+
+1. In [Vercel Marketplace](https://vercel.com/marketplace), add **Upstash Redis** to the project.
+2. Connect the database; Vercel will set **`UPSTASH_REDIS_REST_URL`** and **`UPSTASH_REDIS_REST_TOKEN`**.
+3. Redeploy. The app uses these env vars when present; if unset (e.g. local dev), it falls back to in-memory storage.

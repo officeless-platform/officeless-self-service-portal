@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const sub = getSubscription(parsed.data.subscriptionId);
+    const sub = await getSubscription(parsed.data.subscriptionId);
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const updated = updateSubscription(parsed.data.subscriptionId, {
+    const updated = await updateSubscription(parsed.data.subscriptionId, {
       status: parsed.data.approved ? 'approved' : 'rejected',
     });
     return NextResponse.json(updated);

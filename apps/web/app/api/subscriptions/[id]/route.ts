@@ -6,10 +6,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const sub = getSubscription(id);
+  const sub = await getSubscription(id);
   if (!sub) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  const company = getCompany(sub.companyId);
+  const company = await getCompany(sub.companyId);
   return NextResponse.json({ subscription: sub, company: company ?? null });
 }

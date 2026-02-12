@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const sub = getSubscription(parsed.data.subscriptionId);
+    const sub = await getSubscription(parsed.data.subscriptionId);
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const planSnapshot = { summary, resources };
     const costEstimateSnapshot = costEstimate;
 
-    updateSubscription(parsed.data.subscriptionId, {
+    await updateSubscription(parsed.data.subscriptionId, {
       planSnapshot,
       costEstimateSnapshot,
     });

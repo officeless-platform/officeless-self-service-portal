@@ -17,11 +17,11 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const company = createCompany({
+    const company = await createCompany({
       ...parsed.data,
       verificationStatus: 'pending',
     });
-    const subscription = createSubscription({
+    const subscription = await createSubscription({
       companyId: company.id,
       packageId: 'essentials',
       addOns: [],

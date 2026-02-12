@@ -13,11 +13,11 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const sub = getSubscription(parsed.data.subscriptionId);
+    const sub = await getSubscription(parsed.data.subscriptionId);
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
-    const action = createAdminAction({
+    const action = await createAdminAction({
       subscriptionId: parsed.data.subscriptionId,
       action: 'pause',
       status: 'pending',

@@ -25,11 +25,11 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const sub = getSubscription(parsed.data.subscriptionId);
+    const sub = await getSubscription(parsed.data.subscriptionId);
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
-    const updated = updateSubscription(parsed.data.subscriptionId, {
+    const updated = await updateSubscription(parsed.data.subscriptionId, {
       packageId: parsed.data.packageId,
       addOns: parsed.data.addOns ?? sub.addOns,
       contractMonths: parsed.data.contractMonths ?? sub.contractMonths,
