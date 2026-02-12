@@ -1,13 +1,17 @@
 /**
  * Redis client for Vercel (Upstash Redis from Marketplace).
- * Uses UPSTASH_REDIS_REST_URL (must start with https://) + UPSTASH_REDIS_REST_TOKEN.
- * If the env has rediss:// (TCP URL) or URL is missing, kv is null and store uses in-memory.
+ * Uses UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN, or fallback KV_REST_API_URL + KV_REST_API_TOKEN.
+ * REST URL must start with https://; if missing or rediss://, kv is null and store uses in-memory.
  */
 
 import { Redis } from '@upstash/redis';
 
-const url = process.env.UPSTASH_REDIS_REST_URL;
-const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+const url =
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.KV_REST_API_URL;
+const token =
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  process.env.KV_REST_API_TOKEN;
 
 // @upstash/redis requires the REST API URL (https://...), not the TCP URL (rediss://...)
 const hasValidRestUrl = typeof url === 'string' && url.startsWith('https://');
