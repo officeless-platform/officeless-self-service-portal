@@ -1,0 +1,53 @@
+{
+  "modules": {
+    "vpc": {
+      "resources": [
+        "aws_vpc",
+        "aws_subnet",
+        "aws_internet_gateway",
+        "aws_nat_gateway",
+        "aws_eip",
+        "aws_route_table",
+        "aws_route_table_association"
+      ]
+    },
+    "eks": {
+      "resources": [
+        "aws_eks_cluster",
+        "aws_eks_node_group",
+        "aws_iam_role",
+        "aws_iam_policy",
+        "aws_iam_role_policy_attachment",
+        "aws_iam_openid_connect_provider",
+        "aws_eks_addon"
+      ]
+    },
+    "helm_addons": {
+      "resources": [
+        "helm_release",
+        "kubernetes_namespace",
+        "kubernetes_service_account"
+      ]
+    },
+    "efs": {
+      "resources": [
+        "aws_efs_file_system",
+        "aws_efs_mount_target"
+      ]
+    },
+    "s3": {
+      "resources": [
+        "aws_s3_bucket",
+        "aws_s3_bucket_versioning"
+      ]
+    },
+    "vpn_optional": {
+      "resources": [
+        "aws_instance",
+        "aws_ebs_volume",
+        "aws_volume_attachment",
+        "aws_key_pair"
+      ]
+    }
+  }
+}

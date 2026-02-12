@@ -1,0 +1,256 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+interface Sub {
+  id: string;
+  companyId: string;
+  packageId: string;
+  status: string;
+  infraProfileId: string;
+  awsMode: string;
+  envName: string;
+}
+interface Company {
+  legalName: string;
+  verificationStatus: string;
+}
+interface Action {
+  id: string;
+  action: string;
+  status: string;
+  requestedAt: string;
+  details?: unknown;
+}
+
+export default function AdminCustomerPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const [sub, setSub] = useState<Sub | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [actions, setActions] = useState<Action[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [pauseLoading, setPauseLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [destroyLoading, setDestroyLoading] = useState(false);
+  const [destroyConfirm, setDestroyConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const res = await fetch(`/api/subscriptions/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSub(data.subscription);
+        setCompany(data.company);
+      }
+      setLoading(false);
+    })();
+  }, [id]);
+
+  const refreshActions = async () => {
+    const res = await fetch(`/api/admin/actions?subscriptionId=${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setActions(data.actions ?? []);
+    }
+  };
+
+  useEffect(() => {
+    if (!id) return;
+    refreshActions();
+  }, [id]);
+
+  const handleApprove = async (approved: boolean) => {
+    setError(null);
+    setApproveLoading(true);
+    try {
+      const res = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: id, approved }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      setSub(data);
+    } catch {
+      setError('Failed to update approval');
+    } finally {
+      setApproveLoading(false);
+    }
+  };
+
+  const handlePause = async () => {
+    setError(null);
+    setPauseLoading(true);
+    try {
+      const res = await fetch('/api/admin/pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: id }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      await refreshActions();
+    } catch {
+      setError('Failed to create pause action');
+    } finally {
+      setPauseLoading(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    setError(null);
+    setBackupLoading(true);
+    try {
+      const res = await fetch('/api/admin/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: id }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      await refreshActions();
+    } catch {
+      setError('Failed to create backup action');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleDestroy = async () => {
+    if (destroyConfirm !== company?.legalName) {
+      setError('Type the company name exactly to confirm.');
+      return;
+    }
+    setError(null);
+    setDestroyLoading(true);
+    try {
+      const res = await fetch('/api/admin/destroy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId: id,
+          confirmCompanyName: destroyConfirm,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      await refreshActions();
+      setDestroyConfirm('');
+    } catch {
+      setError('Failed to create destroy action');
+    } finally {
+      setDestroyLoading(false);
+    }
+  };
+
+  if (loading || !sub) {
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-16">
+        <p className="text-slate-400">Loading…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950">
+      <header className="border-b border-slate-700/60 bg-slate-900/50 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <Link href="/admin" className="text-xl font-semibold text-white">
+            ← Admin
+          </Link>
+        </div>
+      </header>
+      <main className="mx-auto max-w-2xl px-6 py-10">
+        <div className="card p-6">
+          <h1 className="text-xl font-semibold text-white">{company?.legalName ?? sub.companyId}</h1>
+          <p className="mt-1 text-slate-400">
+            {sub.packageId} · {sub.infraProfileId} · {sub.awsMode} · {sub.envName}
+          </p>
+          <p className="mt-2">
+            Status: <span className="font-medium text-white">{sub.status}</span>
+          </p>
+
+          {sub.status === 'pending_approval' && (
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => handleApprove(true)}
+                disabled={approveLoading}
+                className="btn-primary"
+              >
+                {approveLoading ? '…' : 'Approve'}
+              </button>
+              <button
+                onClick={() => handleApprove(false)}
+                disabled={approveLoading}
+                className="btn-secondary"
+              >
+                Reject
+              </button>
+            </div>
+          )}
+
+          <section className="mt-8">
+            <h2 className="font-medium text-slate-200">Admin actions (mock)</h2>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={handlePause}
+                disabled={pauseLoading}
+                className="btn-secondary"
+              >
+                {pauseLoading ? '…' : 'Pause infra (retain DB)'}
+              </button>
+              <button
+                onClick={handleBackup}
+                disabled={backupLoading}
+                className="btn-secondary"
+              >
+                {backupLoading ? '…' : 'Backup DB to S3'}
+              </button>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-slate-400">Destroy: type company name to confirm.</p>
+              <input
+                className="input mt-2 max-w-xs"
+                placeholder="Company legal name"
+                value={destroyConfirm}
+                onChange={(e) => setDestroyConfirm(e.target.value)}
+              />
+              <button
+                onClick={handleDestroy}
+                disabled={destroyLoading || destroyConfirm !== company?.legalName}
+                className="btn-primary ml-2 mt-2 bg-red-600 hover:bg-red-500"
+              >
+                {destroyLoading ? '…' : 'Destroy all'}
+              </button>
+            </div>
+          </section>
+
+          {actions.length > 0 && (
+            <section className="mt-8">
+              <h2 className="font-medium text-slate-200">Recent actions</h2>
+              <ul className="mt-2 space-y-2 text-sm text-slate-400">
+                {actions.map((a) => (
+                  <li key={a.id}>
+                    {a.action} — {a.status} — {new Date(a.requestedAt).toLocaleString()}
+                    {a.details && typeof a.details === 'object' && 'description' in a.details
+                      ? (
+                          <span className="ml-2 text-slate-500">
+                            ({String((a.details as { description: string }).description)})
+                          </span>
+                        )
+                      : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        </div>
+      </main>
+    </div>
+  );
+}

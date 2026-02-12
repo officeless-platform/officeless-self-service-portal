@@ -1,0 +1,19 @@
+{
+  "eks_cluster_hourly_usd": 0.10,
+  "nat_gateway_hourly_usd": 0.045,
+  "nat_data_per_gb_usd": 0.045,
+  "alb_hourly_usd": 0.0225,
+  "alb_lcu_hourly_usd": 0.008,
+  "ebs_gp3_per_gb_month_usd": 0.08,
+  "efs_per_gb_month_usd": 0.30,
+  "s3_storage_per_gb_month_usd": 0.023,
+  "hours_per_month": 730,
+  "ec2_hourly_usd": {
+    "t3a.medium": 0.0376,
+    "t3a.large": 0.0752,
+    "t3.medium": 0.0416,
+    "t3.large": 0.0832
+  },
+  "default_alb_lcu_hours": 10,
+  "default_nat_data_gb": 50
+}

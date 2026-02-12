@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::OFFICELESS_ACCOUNT_ID:oidc-provider/oidc.officeless.example.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.officeless.example.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "oidc.officeless.example.com:sub": "repo:officeless/*:*"
+        }
+      }
+    }
+  ]
+}
