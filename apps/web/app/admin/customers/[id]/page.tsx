@@ -402,11 +402,13 @@ export default function AdminCustomerPage() {
                             </span>
                           )
                         : null}
-                      {a.details && typeof a.details === 'object' && 's3Location' in a.details && (
-                        <span className="ml-2 block font-mono text-xs text-slate-500">
-                          {(a.details as { s3Location: string }).s3Location}
-                        </span>
-                      )}
+                      {a.details && typeof a.details === 'object' && 's3Location' in a.details
+                        ? (
+                            <span className="ml-2 block font-mono text-xs text-slate-500">
+                              {String((a.details as { s3Location: string }).s3Location)}
+                            </span>
+                          )
+                        : null}
                     </li>
                   ))}
               </ul>
