@@ -57,6 +57,7 @@ export const AWS_REGIONS = [
   { id: 'eu-west-1', name: 'Europe (Ireland)' },
   { id: 'eu-central-1', name: 'Europe (Frankfurt)' },
   { id: 'ap-southeast-1', name: 'Asia Pacific (Singapore)' },
+  { id: 'ap-southeast-3', name: 'Asia Pacific (Jakarta)' },
   { id: 'ap-northeast-1', name: 'Asia Pacific (Tokyo)' },
   { id: 'ap-southeast-2', name: 'Asia Pacific (Sydney)' },
 ] as const;

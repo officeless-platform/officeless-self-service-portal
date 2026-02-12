@@ -47,6 +47,8 @@ export interface Subscription {
   awsMode: AwsOnboardingMode;
   awsRoleArn?: string;
   awsAccountId?: string;
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
   awsRegion?: string;
   envName: string;
   planSnapshot?: unknown;

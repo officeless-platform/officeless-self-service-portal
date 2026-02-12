@@ -8,6 +8,8 @@ const bodySchema = z.object({
   awsMode: z.enum(['A', 'B', 'C'] as const satisfies AwsOnboardingMode[]),
   awsRoleArn: z.string().optional(),
   awsAccountId: z.string().optional(),
+  awsAccessKeyId: z.string().optional(),
+  awsSecretAccessKey: z.string().optional(),
   awsRegion: z.string().optional(),
 });
 
@@ -26,6 +28,8 @@ export async function POST(request: Request) {
       awsMode: parsed.data.awsMode,
       awsRoleArn: parsed.data.awsRoleArn,
       awsAccountId: parsed.data.awsAccountId,
+      awsAccessKeyId: parsed.data.awsAccessKeyId,
+      awsSecretAccessKey: parsed.data.awsSecretAccessKey,
       awsRegion: parsed.data.awsRegion,
     });
     return NextResponse.json(updated);

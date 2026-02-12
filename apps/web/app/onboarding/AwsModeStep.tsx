@@ -15,6 +15,8 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AwsOnboardingMode>('C');
   const [region, setRegion] = useState('us-east-1');
+  const [accessKeyId, setAccessKeyId] = useState('');
+  const [secretAccessKey, setSecretAccessKey] = useState('');
   const [roleArn, setRoleArn] = useState('arn:aws:iam::123456789012:role/OfficelessProvisionerRole');
   const [accountId, setAccountId] = useState('123456789012');
 
@@ -29,8 +31,10 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
           subscriptionId,
           awsMode: selected,
           awsRegion: region || undefined,
+          awsAccessKeyId: selected === 'B' ? accessKeyId || undefined : undefined,
+          awsSecretAccessKey: selected === 'B' ? secretAccessKey || undefined : undefined,
           awsRoleArn: selected === 'C' ? roleArn || undefined : undefined,
-          awsAccountId: accountId || undefined,
+          awsAccountId: selected === 'C' ? accountId || undefined : undefined,
         }),
       });
       if (!res.ok) {
@@ -95,8 +99,30 @@ export function AwsModeStep({ subscriptionId, onNext, onBack }: AwsModeStepProps
           </div>
         )}
         {selected === 'B' && (
-          <div className="rounded-lg border border-amber-600/50 bg-amber-500/10 p-4 text-sm text-amber-200">
-            <p>Mock only: we do not store real credentials. Required permissions: IAM, EKS, VPC, EC2, EFS, S3, ELB. Prefer Mode C.</p>
+          <div className="space-y-3 rounded-lg border border-slate-600 bg-slate-800/50 p-4">
+            <p className="text-sm text-slate-300">Provide IAM credentials with permissions for IAM, EKS, VPC, EC2, EFS, S3, ELB. Prefer Mode C (OIDC) for better security.</p>
+            <div>
+              <label className="label">Access Key ID</label>
+              <input
+                type="text"
+                className="input mt-1"
+                placeholder="AKIA..."
+                value={accessKeyId}
+                onChange={(e) => setAccessKeyId(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="label">Secret Access Key</label>
+              <input
+                type="password"
+                className="input mt-1"
+                placeholder="••••••••"
+                value={secretAccessKey}
+                onChange={(e) => setSecretAccessKey(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
           </div>
         )}
         {selected === 'C' && (
