@@ -5,10 +5,10 @@ This project uses GitHub Actions to build and deploy to Vercel.
 ## 1. Vercel project setup
 
 1. In [Vercel](https://vercel.com), import the GitHub repository (or create a project and connect the repo).
-2. **Root Directory:** `.` (repository root).
-3. **Build Command:** `npm ci && npm run build --workspace=apps/web`
+2. **Root Directory:** `apps/web` (required — Next.js and its `package.json` live here; root has no `next` dependency).
+3. **Build Command:** leave default (`next build` or `npm run build`).
 4. **Output Directory:** leave default (Next.js is auto-detected).
-5. **Install Command:** leave default (`npm install` / `npm ci`).
+5. **Install Command:** leave default (`npm install` or `npm ci`).
 6. You can disable “Vercel Git” auto-deploys if you want only GitHub Actions to deploy (optional; both can run).
 
 ## 2. Get Vercel tokens and IDs
