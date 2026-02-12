@@ -9,6 +9,7 @@ interface CompanyStepProps {
 export function CompanyStep({ onSuccess }: CompanyStepProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState<{ companyId: string; subscriptionId: string } | null>(null);
   const [form, setForm] = useState({
     legalName: '',
     registrationNumber: '',
@@ -29,13 +30,39 @@ export function CompanyStep({ onSuccess }: CompanyStepProps) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message ?? 'Failed to start');
-      onSuccess(data.companyId, data.subscriptionId);
+      setRegistered({ companyId: data.companyId, subscriptionId: data.subscriptionId });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleContinue = () => {
+    if (registered) onSuccess(registered.companyId, registered.subscriptionId);
+  };
+
+  if (registered) {
+    return (
+      <div className="card p-6">
+        <h2 className="text-xl font-semibold text-white">Registration complete</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Save your subscription ID to check your onboarding status later.
+        </p>
+        <div className="mt-6 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3">
+          <span className="text-sm font-medium text-slate-300">Subscription ID</span>
+          <p className="mt-1 font-mono text-lg text-white">{registered.subscriptionId}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleContinue}
+          className="btn-primary mt-6"
+        >
+          Continue to package
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="card p-6">

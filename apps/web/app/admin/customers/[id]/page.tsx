@@ -60,6 +60,15 @@ export default function AdminCustomerPage() {
     })();
   }, [id]);
 
+  const refreshSubscription = async () => {
+    const res = await fetch(`/api/subscriptions/${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setSub(data.subscription);
+      setCompany(data.company);
+    }
+  };
+
   const refreshActions = async () => {
     const res = await fetch(`/api/admin/actions?subscriptionId=${id}`);
     if (res.ok) {
@@ -85,6 +94,7 @@ export default function AdminCustomerPage() {
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setSub(data);
+      await refreshActions();
     } catch {
       setError('Failed to update approval');
     } finally {
@@ -102,7 +112,7 @@ export default function AdminCustomerPage() {
         body: JSON.stringify({ subscriptionId: id }),
       });
       if (!res.ok) throw new Error('Failed');
-      await refreshActions();
+      await Promise.all([refreshSubscription(), refreshActions()]);
     } catch {
       setError('Failed to create pause action');
     } finally {
@@ -120,7 +130,7 @@ export default function AdminCustomerPage() {
         body: JSON.stringify({ subscriptionId: id }),
       });
       if (!res.ok) throw new Error('Failed');
-      await refreshActions();
+      await Promise.all([refreshSubscription(), refreshActions()]);
     } catch {
       setError('Failed to create backup action');
     } finally {
@@ -145,7 +155,7 @@ export default function AdminCustomerPage() {
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      await refreshActions();
+      await Promise.all([refreshSubscription(), refreshActions()]);
       setDestroyConfirm('');
     } catch {
       setError('Failed to create destroy action');
@@ -168,9 +178,6 @@ export default function AdminCustomerPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <Link href="/admin" className="text-xl font-semibold text-white">
             ← Admin
-          </Link>
-          <Link href="/admin" className="text-slate-400 hover:text-white">
-            Check customer status
           </Link>
         </div>
       </header>
