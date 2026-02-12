@@ -17,16 +17,18 @@ export async function POST(request: Request) {
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
+    const now = new Date().toISOString();
     const retentionEnd = new Date();
     retentionEnd.setDate(retentionEnd.getDate() + 180);
     const action = await createAdminAction({
       subscriptionId: parsed.data.subscriptionId,
       action: 'backup',
-      status: 'pending',
+      status: 'completed',
+      completedAt: now,
       details: {
         description: 'Backup DB to S3, retention 6 months, auto-delete.',
         backup_id: `backup-${Date.now()}`,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
         retention_end_date: retentionEnd.toISOString(),
         s3_lifecycle_expiration_days: 180,
       },

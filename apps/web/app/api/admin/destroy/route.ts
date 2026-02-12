@@ -18,10 +18,12 @@ export async function POST(request: Request) {
     if (!sub) {
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
+    const now = new Date().toISOString();
     const action = await createAdminAction({
       subscriptionId: parsed.data.subscriptionId,
       action: 'destroy',
-      status: 'pending',
+      status: 'completed',
+      completedAt: now,
       details: {
         description: 'Destroy VPC, EKS, EFS, S3, DB. Revoke IAM/OIDC. Mock: no real AWS change.',
         confirmCompanyName: parsed.data.confirmCompanyName,

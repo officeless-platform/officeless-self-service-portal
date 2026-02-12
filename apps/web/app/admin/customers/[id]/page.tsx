@@ -1,9 +1,13 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { EnvironmentReadyDetails } from '@/app/onboarding/EnvironmentReadyDetails';
+import {
+  AdminActionProgressModal,
+  type ProgressStep,
+} from '@/app/admin/customers/AdminActionProgressModal';
 
 interface Sub {
   id: string;
@@ -46,6 +50,62 @@ export default function AdminCustomerPage() {
   const [destroyLoading, setDestroyLoading] = useState(false);
   const [destroyConfirm, setDestroyConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalStep, setModalStep] = useState<ProgressStep>('submitting');
+  const [modalError, setModalError] = useState<string | null>(null);
+  const progressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressAbortedRef = useRef(false);
+
+  const openProgressModal = (title: string) => {
+    setModalError(null);
+    setModalTitle(title);
+    setModalStep('submitting');
+    setModalOpen(true);
+    progressAbortedRef.current = false;
+  };
+
+  const setProgressStep = (step: ProgressStep, err?: string | null) => {
+    setModalStep(step);
+    if (err != null) setModalError(err);
+  };
+
+  const closeModal = () => {
+    progressAbortedRef.current = true;
+    setModalOpen(false);
+    if (progressTimeoutRef.current) {
+      clearTimeout(progressTimeoutRef.current);
+      progressTimeoutRef.current = null;
+    }
+  };
+
+  const runWithProgress = async (
+    title: string,
+    fn: () => Promise<void>
+  ) => {
+    openProgressModal(title);
+    progressTimeoutRef.current = setTimeout(() => {
+      if (!progressAbortedRef.current) setModalStep('processing');
+      progressTimeoutRef.current = null;
+    }, 300);
+    try {
+      await fn();
+      if (progressAbortedRef.current) return;
+      if (progressTimeoutRef.current) {
+        clearTimeout(progressTimeoutRef.current);
+        progressTimeoutRef.current = null;
+      }
+      setProgressStep('succeeded');
+      progressTimeoutRef.current = setTimeout(closeModal, 1500);
+    } catch {
+      if (progressAbortedRef.current) return;
+      if (progressTimeoutRef.current) {
+        clearTimeout(progressTimeoutRef.current);
+        progressTimeoutRef.current = null;
+      }
+      setProgressStep('failed', 'Action failed.');
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -85,7 +145,7 @@ export default function AdminCustomerPage() {
   const handleApprove = async (approved: boolean) => {
     setError(null);
     setApproveLoading(true);
-    try {
+    await runWithProgress(approved ? 'Approving' : 'Rejecting', async () => {
       const res = await fetch('/api/admin/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,17 +155,14 @@ export default function AdminCustomerPage() {
       const data = await res.json();
       setSub(data);
       await refreshActions();
-    } catch {
-      setError('Failed to update approval');
-    } finally {
-      setApproveLoading(false);
-    }
+    });
+    setApproveLoading(false);
   };
 
   const handlePause = async () => {
     setError(null);
     setPauseLoading(true);
-    try {
+    await runWithProgress('Pause infrastructure', async () => {
       const res = await fetch('/api/admin/pause', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,17 +170,14 @@ export default function AdminCustomerPage() {
       });
       if (!res.ok) throw new Error('Failed');
       await Promise.all([refreshSubscription(), refreshActions()]);
-    } catch {
-      setError('Failed to create pause action');
-    } finally {
-      setPauseLoading(false);
-    }
+    });
+    setPauseLoading(false);
   };
 
   const handleBackup = async () => {
     setError(null);
     setBackupLoading(true);
-    try {
+    await runWithProgress('Backup DB to S3', async () => {
       const res = await fetch('/api/admin/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,11 +185,8 @@ export default function AdminCustomerPage() {
       });
       if (!res.ok) throw new Error('Failed');
       await Promise.all([refreshSubscription(), refreshActions()]);
-    } catch {
-      setError('Failed to create backup action');
-    } finally {
-      setBackupLoading(false);
-    }
+    });
+    setBackupLoading(false);
   };
 
   const handleDestroy = async () => {
@@ -145,7 +196,7 @@ export default function AdminCustomerPage() {
     }
     setError(null);
     setDestroyLoading(true);
-    try {
+    await runWithProgress('Destroy all', async () => {
       const res = await fetch('/api/admin/destroy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,11 +208,8 @@ export default function AdminCustomerPage() {
       if (!res.ok) throw new Error('Failed');
       await Promise.all([refreshSubscription(), refreshActions()]);
       setDestroyConfirm('');
-    } catch {
-      setError('Failed to create destroy action');
-    } finally {
-      setDestroyLoading(false);
-    }
+    });
+    setDestroyLoading(false);
   };
 
   if (loading || !sub) {
@@ -269,18 +317,20 @@ export default function AdminCustomerPage() {
             <section className="mt-8">
               <h2 className="font-medium text-slate-200">Recent actions</h2>
               <ul className="mt-2 space-y-2 text-sm text-slate-400">
-                {actions.map((a) => (
-                  <li key={a.id}>
-                    {a.action} — {a.status} — {new Date(a.requestedAt).toLocaleString()}
-                    {a.details && typeof a.details === 'object' && 'description' in a.details
-                      ? (
-                          <span className="ml-2 text-slate-500">
-                            ({String((a.details as { description: string }).description)})
-                          </span>
-                        )
-                      : null}
-                  </li>
-                ))}
+                {actions
+                  .filter((a) => a.status !== 'pending')
+                  .map((a) => (
+                    <li key={a.id}>
+                      {a.action} — <span className={a.status === 'completed' ? 'text-emerald-400' : 'text-red-400'}>{a.status}</span> — {new Date(a.requestedAt).toLocaleString()}
+                      {a.details && typeof a.details === 'object' && 'description' in a.details
+                        ? (
+                            <span className="ml-2 text-slate-500">
+                              ({String((a.details as { description: string }).description)})
+                            </span>
+                          )
+                        : null}
+                    </li>
+                  ))}
               </ul>
             </section>
           )}
@@ -288,6 +338,14 @@ export default function AdminCustomerPage() {
           {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
         </div>
       </main>
+
+      <AdminActionProgressModal
+        open={modalOpen}
+        title={modalTitle}
+        step={modalStep}
+        error={modalError}
+        onClose={closeModal}
+      />
     </div>
   );
 }

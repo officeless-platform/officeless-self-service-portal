@@ -31,6 +31,7 @@ export function EnvironmentReadyDetails({
       value: endpoints.apiEndpoint,
       href: endpoints.apiEndpoint,
       description: 'Base URL for your environment API',
+      status: 'healthy' as const,
     },
     {
       label: 'AWS Console',
@@ -66,6 +67,11 @@ export function EnvironmentReadyDetails({
               {item.label}
             </span>
             <p className="mt-0.5 text-xs text-slate-500">{item.description}</p>
+            {'status' in item && item.status === 'healthy' && (
+              <span className="mt-2 inline-block rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-400">
+                API status: Healthy
+              </span>
+            )}
             <a
               href={item.href}
               target="_blank"
