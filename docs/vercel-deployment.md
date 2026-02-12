@@ -24,3 +24,5 @@ Subscriptions and related data are stored in **Upstash Redis** so they persist a
 1. In [Vercel Marketplace](https://vercel.com/marketplace), add **Upstash Redis** to the project.
 2. Connect the database; Vercel will set **`UPSTASH_REDIS_REST_URL`** and **`UPSTASH_REDIS_REST_TOKEN`**.
 3. Redeploy. The app uses these env vars when present; if unset (e.g. local dev), it falls back to in-memory storage.
+
+**Important:** The client expects **REST API** credentials. `UPSTASH_REDIS_REST_URL` must start with `https://` (e.g. `https://xxx.upstash.io`). If your integration injected a `rediss://` URL (TCP), replace it in Vercel Environment Variables with the REST URL from the [Upstash console](https://console.upstash.com/) (Redis → your database → REST API).
