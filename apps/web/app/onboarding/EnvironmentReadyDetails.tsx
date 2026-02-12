@@ -23,7 +23,7 @@ interface EnvironmentReadyDetailsProps {
 
 const healthLabel: Record<HealthStatus, string> = {
   green: 'Healthy',
-  amber: 'Degraded',
+  amber: 'Paused',
   red: 'Down',
 };
 

@@ -14,6 +14,8 @@ interface SubscriptionInfo {
   id: string;
   envName: string;
   status: string;
+  paused?: boolean;
+  destroyed?: boolean;
 }
 
 function MockAppLoginContent() {
@@ -35,7 +37,7 @@ function MockAppLoginContent() {
         if (res.ok) {
           const data = await res.json();
           setCompany(data.company ?? null);
-          setSubscription(data.subscription ? { id: data.subscription.id, envName: data.subscription.envName, status: data.subscription.status } : null);
+          setSubscription(data.subscription ? { id: data.subscription.id, envName: data.subscription.envName, status: data.subscription.status, paused: data.subscription.paused, destroyed: data.subscription.destroyed } : null);
         } else {
           setCompany(null);
           setSubscription(null);
@@ -132,6 +134,25 @@ function MockAppLoginContent() {
           <h1 className="text-xl font-semibold text-white">Subscription not found</h1>
           <p className="mt-2 text-sm text-slate-400">Invalid or expired link.</p>
           <Link href="/onboarding/status" className="mt-6 inline-block text-emerald-400 hover:underline">View onboarding status →</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isActive = subscription && subscription.status === 'ready' && !subscription.paused && !subscription.destroyed;
+
+  if (subscription && !isActive) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-6">
+        <div className="rounded-xl border border-amber-600/50 bg-amber-500/10 p-8 max-w-md w-full text-center">
+          <h1 className="text-xl font-semibold text-white">Application not available</h1>
+          <p className="mt-2 text-sm text-slate-400">
+            Your subscription is not active. Sign-in is only available when the environment is ready and not paused or destroyed.
+          </p>
+          {subscription.paused && <p className="mt-2 text-sm text-amber-400">Environment is paused.</p>}
+          {subscription.destroyed && <p className="mt-2 text-sm text-red-400">Environment has been destroyed.</p>}
+          {subscription.status !== 'ready' && !subscription.destroyed && <p className="mt-2 text-sm text-slate-400">Current status: {subscription.status}</p>}
+          <Link href={`/onboarding/status?id=${subscriptionId}`} className="mt-6 inline-block text-emerald-400 hover:underline">View onboarding status →</Link>
         </div>
       </div>
     );
