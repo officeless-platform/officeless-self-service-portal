@@ -11,7 +11,13 @@ export default function HomePage() {
               href="/onboarding"
               className="text-slate-300 hover:text-emerald-400"
             >
-              Customer onboarding
+              Start onboarding
+            </Link>
+            <Link
+              href="/onboarding/status"
+              className="text-slate-300 hover:text-emerald-400"
+            >
+              Check customer status
             </Link>
             <Link
               href="/admin"
@@ -43,6 +49,12 @@ export default function HomePage() {
               className="btn-primary inline-flex items-center px-6 py-3"
             >
               Start onboarding
+            </Link>
+            <Link
+              href="/onboarding/status"
+              className="btn-secondary inline-flex items-center px-6 py-3"
+            >
+              Check customer status
             </Link>
             <Link
               href="/admin"

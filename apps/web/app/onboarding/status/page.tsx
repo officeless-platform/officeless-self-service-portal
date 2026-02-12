@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useMemo, useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { ProvisioningProgress } from '../ProvisioningProgress';
@@ -22,7 +22,9 @@ interface SubscriptionStatus {
 
 function OnboardingStatusContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id = searchParams.get('id');
+  const [statusIdInput, setStatusIdInput] = useState('');
   const [data, setData] = useState<{
     subscription: SubscriptionStatus;
     company: { legalName: string } | null;
@@ -91,13 +93,59 @@ function OnboardingStatusContent() {
 
   if (!id) {
     return (
-      <div className="min-h-screen bg-slate-950 px-6 py-16">
-        <div className="mx-auto max-w-lg text-center">
-          <p className="text-slate-400">No subscription ID in URL.</p>
-          <Link href="/onboarding" className="mt-4 inline-block text-emerald-400 hover:underline">
-            Start onboarding
+      <div className="min-h-screen bg-slate-950">
+        <header className="border-b border-slate-700/60 bg-slate-900/50 px-6 py-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between">
+            <Link href="/" className="text-xl font-semibold text-white">
+              Officeless Portal
+            </Link>
+            <Link href="/" className="text-slate-400 hover:text-white">
+              Home
+            </Link>
+          </div>
+        </header>
+        <main className="mx-auto max-w-lg px-6 py-16">
+          <h1 className="text-xl font-semibold text-white">View onboarding status</h1>
+          <p className="mt-1 text-slate-400">
+            Enter your subscription ID to see provisioning progress and environment details.
+          </p>
+          <div className="mt-6">
+            <label htmlFor="status-id" className="label">
+              Subscription ID
+            </label>
+            <div className="mt-2 flex gap-2">
+              <input
+                id="status-id"
+                type="text"
+                placeholder="e.g. sub-1"
+                value={statusIdInput}
+                onChange={(e) => setStatusIdInput(e.target.value.trim())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (statusIdInput) router.push(`/onboarding/status?id=${encodeURIComponent(statusIdInput)}`);
+                  }
+                }}
+                className="input flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (statusIdInput) router.push(`/onboarding/status?id=${encodeURIComponent(statusIdInput)}`);
+                }}
+                disabled={!statusIdInput}
+                className="btn-primary"
+              >
+                View status
+              </button>
+            </div>
+          </div>
+          <p className="mt-6 text-sm text-slate-500">
+            You received this ID when you started onboarding (e.g. sub-1, sub-2).
+          </p>
+          <Link href="/onboarding" className="mt-6 inline-block text-emerald-400 hover:underline">
+            Start a new onboarding →
           </Link>
-        </div>
+        </main>
       </div>
     );
   }

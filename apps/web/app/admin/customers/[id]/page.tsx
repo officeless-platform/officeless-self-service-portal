@@ -169,6 +169,9 @@ export default function AdminCustomerPage() {
           <Link href="/admin" className="text-xl font-semibold text-white">
             ← Admin
           </Link>
+          <Link href="/admin" className="text-slate-400 hover:text-white">
+            Check customer status
+          </Link>
         </div>
       </header>
       <main className="mx-auto max-w-2xl px-6 py-10">

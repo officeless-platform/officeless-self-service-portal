@@ -33,12 +33,17 @@ export default function AdminPage() {
     <div className="min-h-screen bg-slate-950">
       <header className="border-b border-slate-700/60 bg-slate-900/50 px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link href="/" className="text-xl font-semibold text-white">
+          <Link href="/admin" className="text-xl font-semibold text-white">
             Officeless Portal — Admin
           </Link>
-          <Link href="/" className="text-slate-400 hover:text-white">
-            Home
-          </Link>
+          <nav className="flex gap-4">
+            <Link href="/admin" className="text-emerald-400 hover:text-emerald-300">
+              Check customer status
+            </Link>
+            <Link href="/" className="text-slate-400 hover:text-white">
+              Home
+            </Link>
+          </nav>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-10">
